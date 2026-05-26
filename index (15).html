@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>...left</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Auth Screen -->
+  <div id="screen-auth" class="screen active">
+    <div class="auth-bg"></div>
+    <div class="auth-container">
+      <div class="auth-header">
+        <h1 class="brand">...left</h1>
+        <p class="brand-sub">your money. your goals. your timeline.</p>
+      </div>
+      <div class="auth-card" id="auth-card">
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-tab="login">Sign in</button>
+          <button class="auth-tab" data-tab="signup">Sign up</button>
+        </div>
+        <div id="tab-login" class="tab-pane active">
+          <div class="input-group">
+            <label>Email</label>
+            <input type="email" id="login-email" placeholder="you@email.com" autocomplete="email" />
+          </div>
+          <div class="input-group">
+            <label>Password</label>
+            <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" />
+          </div>
+          <div id="auth-error" class="auth-error hidden"></div>
+          <button class="btn-primary" id="btn-login">Sign in</button>
+        </div>
+        <div id="tab-signup" class="tab-pane">
+          <div class="input-group">
+            <label>Email</label>
+            <input type="email" id="signup-email" placeholder="you@email.com" autocomplete="email" />
+          </div>
+          <div class="input-group">
+            <label>Password</label>
+            <input type="password" id="signup-password" placeholder="Min. 6 characters" autocomplete="new-password" />
+          </div>
+          <div id="signup-error" class="auth-error hidden"></div>
+          <button class="btn-primary" id="btn-signup">Create account</button>
+        </div>
+      </div>
+      <p class="auth-footer">Track every dollar. Own every goal.</p>
+    </div>
+  </div>
+
+  <!-- Home Screen -->
+  <div id="screen-home" class="screen">
+    <div class="home-header">
+      <div class="home-header-top">
+        <h1 class="wordmark">...left</h1>
+        <button class="btn-icon" id="btn-add-goal">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="home-summary" id="home-summary">
+        <div class="summary-item">
+          <span class="summary-val" id="summary-total">$0</span>
+          <span class="summary-label">total saved</span>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-item">
+          <span class="summary-val" id="summary-goals">0</span>
+          <span class="summary-label">goals</span>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-item">
+          <span class="summary-val" id="summary-done">0</span>
+          <span class="summary-label">completed</span>
+        </div>
+      </div>
+      <div class="filter-row" id="filter-row">
+        <button class="filter-chip active" data-filter="all">All</button>
+        <button class="filter-chip" data-filter="uncompleted">Active</button>
+        <button class="filter-chip" data-filter="completed">Done</button>
+        <button class="filter-chip" data-filter="easy">Easy → Hard</button>
+        <button class="filter-chip" data-filter="hard">Hard → Easy</button>
+      </div>
+    </div>
+    <div class="goals-list" id="goals-list">
+      <div class="empty-state" id="empty-state">
+        <div class="empty-icon">◎</div>
+        <p>No goals yet.<br/>Tap <strong>+</strong> to start saving.</p>
+      </div>
+    </div>
+    <div class="home-footer">
+      <button class="footer-btn active">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="11" y="3" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="3" y="11" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="11" y="11" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.8"/></svg>
+        Goals
+      </button>
+      <button class="footer-btn" id="btn-footer-profile">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M3 17c0-3.314 3.134-6 7-6s7 2.686 7 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Profile
+      </button>
+    </div>
+  </div>
+
+  <!-- Goal Detail Screen -->
+  <div id="screen-goal" class="screen">
+    <div class="goal-screen-header" id="goal-screen-header">
+      <button class="btn-back" id="btn-back-home">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M13 4l-7 6 7 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="goal-screen-icon" id="goal-screen-icon">🎯</div>
+      <button class="btn-icon btn-edit-goal" id="btn-edit-goal">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M13 2.5l2.5 2.5-9 9L3 15l.5-3.5 9.5-9z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+
+    <div class="goal-detail-body" id="goal-detail-body">
+      <h2 class="goal-detail-name" id="goal-detail-name">Goal Name</h2>
+      <p class="goal-detail-deadline" id="goal-detail-deadline">Due: —</p>
+
+      <div class="goal-ring-container">
+        <svg class="ring-svg" viewBox="0 0 200 200">
+          <circle class="ring-bg" cx="100" cy="100" r="80" />
+          <circle class="ring-fill" id="ring-fill" cx="100" cy="100" r="80" />
+        </svg>
+        <div class="ring-center">
+          <span class="ring-pct" id="ring-pct">0%</span>
+          <span class="ring-label">saved</span>
+        </div>
+      </div>
+
+      <div class="goal-amounts">
+        <div class="amount-block">
+          <span class="amount-val" id="detail-saved">$0</span>
+          <span class="amount-label">saved</span>
+        </div>
+        <div class="amount-divider"></div>
+        <div class="amount-block">
+          <span class="amount-val" id="detail-remaining">$0</span>
+          <span class="amount-label">remaining</span>
+        </div>
+        <div class="amount-divider"></div>
+        <div class="amount-block">
+          <span class="amount-val" id="detail-target">$0</span>
+          <span class="amount-label">target</span>
+        </div>
+      </div>
+
+      <div class="deposit-section">
+        <h3 class="section-title">Add deposit</h3>
+        <div class="deposit-input-row">
+          <span class="deposit-currency">$</span>
+          <input type="number" id="deposit-amount" placeholder="0.00" min="0" step="0.01" />
+          <button class="btn-deposit" id="btn-deposit">Add</button>
+        </div>
+      </div>
+
+      <div class="transactions-section">
+        <h3 class="section-title">Deposits</h3>
+        <div class="transactions-list" id="transactions-list">
+          <p class="no-transactions">No deposits yet.</p>
+        </div>
+      </div>
+
+      <button class="btn-danger" id="btn-delete-goal">Delete goal</button>
+    </div>
+  </div>
+
+  <!-- Create / Edit Goal Modal -->
+  <div id="modal-goal" class="modal-overlay hidden">
+    <div class="modal-sheet" id="modal-sheet">
+      <div class="modal-handle"></div>
+      <h2 class="modal-title" id="modal-goal-title">New goal</h2>
+
+      <div class="input-group">
+        <label>Goal name</label>
+        <input type="text" id="goal-name" placeholder="e.g. New laptop" maxlength="40" />
+      </div>
+      <div class="input-group">
+        <label>Target amount (USD)</label>
+        <div class="currency-input">
+          <span>$</span>
+          <input type="number" id="goal-target" placeholder="0.00" min="1" step="0.01" />
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Deadline</label>
+        <input type="date" id="goal-deadline" />
+      </div>
+      <div class="input-group">
+        <label>Icon (emoji)</label>
+        <div class="emoji-grid" id="emoji-grid"></div>
+        <input type="text" id="goal-icon-custom" placeholder="Or type any emoji" maxlength="4" />
+      </div>
+
+      <div id="goal-form-error" class="auth-error hidden"></div>
+
+      <div class="modal-actions">
+        <button class="btn-secondary" id="btn-modal-cancel">Cancel</button>
+        <button class="btn-primary" id="btn-modal-save">Save goal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile / Settings Screen -->
+  <div id="screen-profile" class="screen">
+    <div class="profile-header">
+      <button class="btn-back" id="btn-back-from-profile">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M13 4l-7 6 7 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h2 class="screen-title">Profile</h2>
+    </div>
+    <div class="profile-body">
+      <div class="profile-avatar" id="profile-avatar">◎</div>
+      <p class="profile-email" id="profile-email">—</p>
+      <div class="settings-section">
+        <h3 class="settings-group-label">Account</h3>
+        <div class="settings-list">
+          <button class="settings-item" id="btn-signout">
+            <span>Sign out</span>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 8H2m4-4-4 4 4 4M12 2h1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3 class="settings-group-label">App</h3>
+        <div class="settings-list">
+          <div class="settings-item no-action">
+            <span>Version</span>
+            <span class="settings-val">1.0.0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- Supabase Config Modal (first run) -->
+  <div id="modal-config" class="modal-overlay hidden">
+    <div class="modal-sheet config-sheet">
+      <div class="modal-handle"></div>
+      <h2 class="modal-title">Connect Supabase</h2>
+      <p class="config-desc">Enter your Supabase project credentials to get started. You can find these in your Supabase dashboard under Project Settings → API.</p>
+      <div class="input-group">
+        <label>Supabase URL</label>
+        <input type="url" id="config-url" placeholder="https://xxxx.supabase.co" />
+      </div>
+      <div class="input-group">
+        <label>Anon Key</label>
+        <input type="text" id="config-key" placeholder="eyJhbGciOiJIUzI1NiIs..." />
+      </div>
+      <div id="config-error" class="auth-error hidden"></div>
+      <button class="btn-primary" id="btn-config-save">Connect</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
