@@ -298,12 +298,19 @@ input::placeholder{color:var(--t3);}
 /* Transactions */
 .txn-list{display:flex;flex-direction:column;gap:7px;margin-bottom:20px;}
 .txn-item{
-  display:flex;align-items:center;justify-content:space-between;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
   background:var(--surf);border-radius:var(--rs);padding:11px 15px;
   box-shadow:0 1px 6px rgba(28,25,23,.05);animation:cin .22s ease both;
 }
+.txn-left{display:flex;flex-direction:column;gap:2px;flex:1;}
 .txn-amt{font-family:var(--fd);font-size:1rem;color:var(--accent);}
 .txn-date{font-size:.75rem;color:var(--t3);}
+.txn-del{
+  width:28px;height:28px;border:none;background:transparent;cursor:pointer;
+  color:var(--t3);border-radius:6px;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:background .15s,color .15s;padding:0;
+}
+.txn-del:hover,.txn-del:active{background:var(--dan-lt);color:var(--danger);}
 .no-txn{font-size:.84rem;color:var(--t3);text-align:center;padding:14px 0;}
 
 /* ── MODAL ── */
@@ -369,6 +376,45 @@ input::placeholder{color:var(--t3);}
 .s-item:last-child{border-bottom:none;}
 .s-item:active:not(.static){background:var(--surf2);}
 .s-val{color:var(--t3);font-size:.88rem;}
+
+/* ── RECOMMEND SECTION ── */
+.rec-section{margin-bottom:22px;}
+.rec-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.rec-card{
+  background:var(--surf);border-radius:var(--rs);padding:13px 10px;
+  box-shadow:var(--sh);display:flex;flex-direction:column;align-items:center;gap:4px;
+  border:1.5px solid transparent;transition:border-color .18s,background .18s;
+}
+.rec-card.highlight{
+  border-color:var(--accent);background:var(--acc-lt);
+}
+.rec-period{
+  font-size:.65rem;font-weight:600;color:var(--t3);text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.rec-card.highlight .rec-period{color:var(--accent);}
+.rec-amt{font-family:var(--fd);font-size:1.05rem;color:var(--text);line-height:1.1;text-align:center;}
+.rec-card.highlight .rec-amt{color:var(--accent);}
+.rec-note{font-size:.65rem;color:var(--t3);text-align:center;line-height:1.4;}
+.rec-card.highlight .rec-note{color:var(--accent);opacity:.8;}
+
+/* ── PACE INSIGHT SECTION ── */
+.pace-section{margin-bottom:22px;}
+.pace-card{
+  background:var(--surf);border-radius:var(--rs);padding:16px;
+  box-shadow:var(--sh);display:flex;gap:13px;align-items:flex-start;
+}
+.pace-icon{font-size:1.5rem;flex-shrink:0;margin-top:1px;}
+.pace-text{flex:1;}
+.pace-headline{
+  font-size:.8rem;font-weight:600;color:var(--t2);text-transform:uppercase;
+  letter-spacing:.05em;margin-bottom:5px;
+}
+.pace-msg{font-size:.88rem;color:var(--text);line-height:1.55;}
+.pace-msg strong{color:var(--accent);font-weight:600;}
+.pace-msg.warn strong{color:var(--gold);}
+.pace-msg.danger strong{color:var(--danger);}
+.pace-sub{font-size:.76rem;color:var(--t3);margin-top:5px;line-height:1.4;}
 
 /* ── TOAST ── */
 #toast{
@@ -523,6 +569,41 @@ input::placeholder{color:var(--t3);}
       <div class="ab-item"><span class="ab-val" id="ab-rem">$0</span><span class="ab-lbl">remaining</span></div>
       <div class="ab-div"></div>
       <div class="ab-item"><span class="ab-val" id="ab-target">$0</span><span class="ab-lbl">target</span></div>
+    </div>
+
+    <!-- We Recommend -->
+    <div class="rec-section" id="rec-section">
+      <p class="sec-ttl">We recommend</p>
+      <div class="rec-cards">
+        <div class="rec-card" id="rec-day">
+          <span class="rec-period">Daily</span>
+          <span class="rec-amt" id="rec-day-amt">—</span>
+          <span class="rec-note">per day</span>
+        </div>
+        <div class="rec-card highlight" id="rec-week">
+          <span class="rec-period">Weekly</span>
+          <span class="rec-amt" id="rec-week-amt">—</span>
+          <span class="rec-note">per week</span>
+        </div>
+        <div class="rec-card" id="rec-month">
+          <span class="rec-period">Monthly</span>
+          <span class="rec-amt" id="rec-month-amt">—</span>
+          <span class="rec-note">per month</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pace Insight -->
+    <div class="pace-section" id="pace-section" style="display:none">
+      <p class="sec-ttl">Your pace</p>
+      <div class="pace-card">
+        <div class="pace-icon" id="pace-icon">📈</div>
+        <div class="pace-text">
+          <div class="pace-headline" id="pace-headline">Analysing…</div>
+          <p class="pace-msg" id="pace-msg"></p>
+          <p class="pace-sub" id="pace-sub"></p>
+        </div>
+      </div>
     </div>
 
     <p class="sec-ttl">Add deposit</p>
@@ -791,7 +872,9 @@ async function deposit(){
 async function loadTxns(goalId){
   const {data}=await sb.from('transactions').select('*')
     .eq('goal_id',goalId).order('created_at',{ascending:false});
-  renderTxns(data||[]);
+  const txns=data||[];
+  renderTxns(txns);
+  if(activeGoal) updatePaceInsight(activeGoal, txns);
 }
 
 // ── Render ─────────────────────────────
@@ -863,9 +946,193 @@ function renderTxns(txns){
     const el=document.createElement('div');
     el.className='txn-item';
     const d=new Date(t.created_at);
-    el.innerHTML=`<span class="txn-amt">+${fmt(t.amount)}</span><span class="txn-date">${d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span>`;
+    el.innerHTML=`
+      <div class="txn-left">
+        <span class="txn-amt">+${fmt(t.amount)}</span>
+        <span class="txn-date">${d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span>
+      </div>
+      <button class="txn-del" title="Delete deposit" aria-label="Delete deposit">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 3.5h10M5.5 3.5V2.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v1M3.5 3.5l.5 8h6l.5-8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>`;
+    el.querySelector('.txn-del').addEventListener('click',()=>deleteTxn(t));
     wrap.appendChild(el);
   });
+}
+
+async function deleteTxn(txn){
+  if(!activeGoal) return;
+  if(!confirm(`Remove this $${Number(txn.amount).toFixed(2)} deposit? This will subtract it from your saved total.`)) return;
+  try{
+    const {error:e1}=await sb.from('transactions').delete().eq('id',txn.id);
+    if(e1) throw e1;
+    const newSaved=Math.max(0,Number(activeGoal.saved_amount)-Number(txn.amount));
+    const done=newSaved>=Number(activeGoal.target_amount);
+    const {data:updated,error:e2}=await sb.from('goals')
+      .update({saved_amount:newSaved,completed:done})
+      .eq('id',activeGoal.id).eq('user_id',user.id).select().single();
+    if(e2) throw e2;
+    goals=goals.map(g=>g.id===updated.id?updated:g);
+    activeGoal=updated;
+    updateGoalDetailUI(updated);
+    animateRing(updated);
+    await loadTxns(updated.id);
+    renderGoals(); renderSummary();
+    toast('Deposit removed.');
+  } catch(e){toast('Error: '+e.message);}
+}
+
+// ── Recommendations ────────────────────
+function updateRecommendations(g){
+  const saved=Number(g.saved_amount||0);
+  const target=Number(g.target_amount||1);
+  const remaining=Math.max(0,target-saved);
+  const dl=g.deadline?daysLeft(g.deadline):null;
+
+  const secEl=$('rec-section');
+  if(g.completed||remaining<=0){
+    secEl.style.display='none';
+    return;
+  }
+  secEl.style.display='block';
+
+  // Calculate based on time remaining, fallback to 30 days if no deadline
+  const daysAvail=dl!=null&&dl>0?dl:30;
+  const perDay=remaining/daysAvail;
+  const perWeek=perDay*7;
+  const perMonth=perDay*30;
+
+  // Format nicely — round up so user always reaches goal
+  function fmtRec(v){
+    if(v<0.01) return '<$0.01';
+    if(v<100) return '$'+Math.ceil(v*100)/100 === Math.ceil(v)
+      ? '$'+Math.ceil(v)
+      : '$'+v.toFixed(2).replace(/\.00$/,'').replace(/(\.\d)0$/,'$1');
+    return '$'+Math.ceil(v).toLocaleString('en-US');
+  }
+
+  $('rec-day-amt').textContent=fmtRec(perDay);
+  $('rec-week-amt').textContent=fmtRec(perWeek);
+  $('rec-month-amt').textContent=fmtRec(perMonth);
+
+  // Highlight the most "natural" cadence
+  ['rec-day','rec-week','rec-month'].forEach(id=>$( id).classList.remove('highlight'));
+  if(perMonth>target)        $('rec-day').classList.add('highlight');
+  else if(daysAvail<=21)     $('rec-day').classList.add('highlight');
+  else if(daysAvail<=90)     $('rec-week').classList.add('highlight');
+  else                       $('rec-month').classList.add('highlight');
+
+  // Update note text with deadline context
+  const note=dl!=null&&dl>0?`to hit your deadline`:`(no deadline set)`;
+  document.querySelectorAll('.rec-note').forEach(el=>el.textContent=el.textContent.includes('day')||el.textContent.includes('week')||el.textContent.includes('month')?el.textContent:note);
+  $('rec-day-amt').closest('.rec-card').querySelector('.rec-note').textContent='per day'+( dl!=null&&dl>0?' to meet deadline':'');
+  $('rec-week-amt').closest('.rec-card').querySelector('.rec-note').textContent='per week'+( dl!=null&&dl>0?' to meet deadline':'');
+  $('rec-month-amt').closest('.rec-card').querySelector('.rec-note').textContent='per month'+( dl!=null&&dl>0?' to meet deadline':'');
+}
+
+// ── Pace Insight ───────────────────────
+function updatePaceInsight(g, txns){
+  const paceSection=$('pace-section');
+  if(!txns||txns.length<2||g.completed){
+    paceSection.style.display='none';
+    return;
+  }
+
+  const saved=Number(g.saved_amount||0);
+  const target=Number(g.target_amount||1);
+  const remaining=Math.max(0,target-saved);
+
+  // Infer avg deposit frequency in days using transaction timestamps
+  const sorted=[...txns].sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  const firstDate=new Date(sorted[0].created_at);
+  const lastDate=new Date(sorted[sorted.length-1].created_at);
+  const spanDays=(lastDate-firstDate)/86400000||1;
+  const totalDeposited=sorted.reduce((s,t)=>s+Number(t.amount),0);
+  const avgPerDay=totalDeposited/Math.max(spanDays,1);
+
+  // Round to nearest natural cadence
+  let cadenceLabel, avgPerCadence, cadenceDays;
+  if(avgPerDay*7<avgPerDay*30/4){
+    cadenceLabel='day'; cadenceDays=1; avgPerCadence=avgPerDay;
+  } else if(avgPerDay*30<avgPerDay*365/12*2){
+    // Try weekly
+    const avgPerWeek=avgPerDay*7;
+    cadenceLabel='week'; cadenceDays=7; avgPerCadence=avgPerWeek;
+  } else {
+    const avgPerMonth=avgPerDay*30;
+    cadenceLabel='month'; cadenceDays=30; avgPerCadence=avgPerMonth;
+  }
+
+  // Find best natural cadence by spacing
+  const gaps=[];
+  for(let i=1;i<sorted.length;i++){
+    gaps.push((new Date(sorted[i].created_at)-new Date(sorted[i-1].created_at))/86400000);
+  }
+  const avgGap=gaps.reduce((a,b)=>a+b,0)/gaps.length;
+  if(avgGap<3){cadenceLabel='day';cadenceDays=1;avgPerCadence=avgPerDay;}
+  else if(avgGap<10){cadenceLabel='week';cadenceDays=7;avgPerCadence=avgPerDay*7;}
+  else{cadenceLabel='month';cadenceDays=30;avgPerCadence=avgPerDay*30;}
+
+  if(avgPerCadence<0.01||remaining<=0){
+    paceSection.style.display='none';
+    return;
+  }
+
+  paceSection.style.display='block';
+
+  // Days until goal at current pace
+  const daysToGoal=remaining/avgPerDay;
+
+  const dl=g.deadline?daysLeft(g.deadline):null;
+  const fmtAmt=v=>'$'+Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fmtTime=days=>{
+    if(days<1) return 'less than a day';
+    if(days<14) return Math.ceil(days)+' day'+(Math.ceil(days)===1?'':'s');
+    if(days<60) return Math.ceil(days/7)+' week'+(Math.ceil(days/7)===1?'':'s');
+    return Math.ceil(days/30)+' month'+(Math.ceil(days/30)===1?'':'s');
+  };
+
+  const msgEl=$('pace-msg');
+  const subEl=$('pace-sub');
+  const headEl=$('pace-headline');
+  const iconEl=$('pace-icon');
+  msgEl.className='pace-msg';
+
+  if(dl!=null){
+    const diff=dl-daysToGoal; // positive = early, negative = late
+    const absDiff=Math.abs(diff);
+
+    if(diff>1){
+      // On track — ahead of deadline
+      iconEl.textContent='🚀';
+      headEl.textContent='Ahead of schedule';
+      msgEl.innerHTML=`You're depositing about <strong>${fmtAmt(avgPerCadence)}</strong> per ${cadenceLabel}. At this pace, you'll reach your <strong>${fmtAmt(target)}</strong> goal in about <strong>${fmtTime(daysToGoal)}</strong> — roughly <strong>${fmtTime(absDiff)} early</strong> compared to your deadline.`;
+      subEl.textContent='Keep it up! You might even consider a lower monthly contribution.';
+    } else if(diff>=-5){
+      // Right on track
+      iconEl.textContent='✅';
+      headEl.textContent='Right on track';
+      msgEl.innerHTML=`With about <strong>${fmtAmt(avgPerCadence)}</strong> per ${cadenceLabel}, you're on pace to reach your <strong>${fmtAmt(target)}</strong> goal right around your deadline.`;
+      subEl.textContent='Great consistency! Stay the course.';
+    } else {
+      // Behind — will miss deadline
+      iconEl.textContent='⚠️';
+      headEl.textContent='Falling behind';
+      msgEl.className='pace-msg warn';
+      const needed=remaining/Math.max(dl,1);
+      let neededFmt;
+      if(cadenceLabel==='month') neededFmt=fmtAmt(needed*30);
+      else if(cadenceLabel==='week') neededFmt=fmtAmt(needed*7);
+      else neededFmt=fmtAmt(needed);
+      msgEl.innerHTML=`At your current pace of <strong>${fmtAmt(avgPerCadence)}</strong> per ${cadenceLabel}, you'll reach your goal about <strong>${fmtTime(absDiff)} after your deadline</strong>. Consider boosting to <strong>${neededFmt}</strong> per ${cadenceLabel}.`;
+      subEl.textContent='A small increase now avoids a big catch-up later.';
+    }
+  } else {
+    // No deadline — just give ETA
+    iconEl.textContent='📊';
+    headEl.textContent='At your current pace';
+    msgEl.innerHTML=`You're depositing about <strong>${fmtAmt(avgPerCadence)}</strong> per ${cadenceLabel}. At this pace, you'll reach your <strong>${fmtAmt(target)}</strong> goal in approximately <strong>${fmtTime(daysToGoal)}</strong>.`;
+    subEl.textContent='Set a deadline to get personalised recommendations.';
+  }
 }
 
 // ── Goal Detail ────────────────────────
@@ -888,6 +1155,7 @@ function updateGoalDetailUI(g){
   $('ab-saved').textContent=fmt(saved);
   $('ab-rem').textContent=fmt(Math.max(0,target-saved));
   $('ab-target').textContent=fmt(target);
+  updateRecommendations(g);
 }
 function animateRing(g){
   const saved=Number(g.saved_amount||0);
