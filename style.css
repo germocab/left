@@ -520,6 +520,7 @@ input::placeholder,textarea::placeholder{color:var(--t3);}
 .gd-info-card{
   background:var(--surf);border-radius:var(--r);
   box-shadow:var(--sh);overflow:hidden;margin-bottom:20px;
+  display:flex;flex-direction:column;
 }
 .gd-detail-text{
   font-size:.88rem;color:var(--t2);line-height:1.6;
