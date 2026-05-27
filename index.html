@@ -253,7 +253,7 @@
     <div class="settings-grp">
       <p class="grp-lbl">App</p>
       <div class="settings-list">
-        <div class="s-item static"><span>Version</span><span class="s-val">1.4.9</span></div>
+        <div class="s-item static"><span>Version</span><span class="s-val">1.4.0</span></div>
       </div>
     </div>
   </div>
@@ -1228,9 +1228,9 @@ function updateGoalDetailUI(g){
   $('ab-target').textContent=fmt(target);
   const tagsArr=(g.tags||'').split(',').map(t=>t.trim()).filter(Boolean);
   $('gd-tags').innerHTML=tagsArr.map(t=>`<span class="tag-pill">${esc(t)}</span>`).join('');
-  // Details
+  // Details — handle all possible DB column names
   const detailsEl=$('gd-details');
-  const detailsText=g.details||g.notes||'';
+  const detailsText=g.details||g.notes||g.description||'';
   const hasDetails=!!detailsText;
   const hasLink=!!g.link;
   if(hasDetails){
@@ -1251,7 +1251,7 @@ function updateGoalDetailUI(g){
   } else {
     linkEl.classList.add('hide');
   }
-  // Show/hide the whole card
+  // Show card only when there's something to display
   $('gd-info-card').classList.toggle('hide',!hasDetails&&!hasLink);
   updateRecommendations(g);
 }
